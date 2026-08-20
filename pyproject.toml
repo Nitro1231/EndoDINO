@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "endodino"
+version = "0.1.0"
+description = "GastroNet-5M DINOv2 ViT-B fine-tuning for EGD anatomical landmark classification."
+requires-python = ">=3.10"
+dependencies = [
+    "torch",
+    "torchvision",
+    "timm",
+    "numpy",
+    "Pillow",
+    "scikit-learn",
+    "matplotlib",
+    "wandb",
+    "tqdm",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
