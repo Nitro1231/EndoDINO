@@ -1,6 +1,8 @@
 import argparse
 import csv
 import logging
+import random
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -14,10 +16,13 @@ from endodino.constants import (
     CLASSES,
     CLASS_LABELS_EN,
     CLASS_LABELS_KR,
+    DEFAULT_IMAGES,
+    DEFAULT_LABELS,
     DEFAULT_OUTPUTS,
     DEFAULT_TEST_DIR,
     IMAGENET_MEAN,
     IMAGENET_STD,
+    OTHERCLASS,
 )
 from endodino.data import eval_transform
 from endodino.evaluate import load_trained_model
@@ -57,14 +62,45 @@ def annotate(image, text):
     return vis
 
 
-def save_detailed(path, original, processed, probs, pred, name):
+def load_class_examples(n=5, seed=42):
+    """Five GastroHUN complete-agreement thumbnails per class (same sample as the reference sheet)."""
+    by_class = defaultdict(list)
+    with DEFAULT_LABELS.open(newline="") as f:
+        for row in csv.DictReader(f):
+            label = row["Complete agreement"].strip()
+            if not label:
+                continue
+            name = "NA" if label == OTHERCLASS else label
+            by_class[name].append(DEFAULT_IMAGES / row["num patient"] / row["filename"])
+    rng = random.Random(seed)
+    examples = {}
+    for cls in CLASSES:
+        paths = rng.sample(by_class[cls], n)
+        thumbs = []
+        for path in paths:
+            image = Image.open(path).convert("RGB")
+            side = min(image.size)
+            left = (image.width - side) // 2
+            top = (image.height - side) // 2
+            thumbs.append(
+                image.crop((left, top, left + side, top + side)).resize(
+                    (220, 220), Image.Resampling.LANCZOS
+                )
+            )
+        examples[cls] = thumbs
+    return examples
+
+
+def save_detailed(path, original, processed, probs, pred, name, examples):
     values = [float(p) for p in probs]
-    order = sorted(range(len(CLASSES)), key=lambda i: values[i], reverse=True)
-    fig = plt.figure(figsize=(13, 9), constrained_layout=True)
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.15, 1.0])
-    ax_orig = fig.add_subplot(gs[0, 0])
-    ax_proc = fig.add_subplot(gs[0, 1])
-    ax_bar = fig.add_subplot(gs[1, :])
+    order = sorted(range(len(CLASSES)), key=lambda i: values[i], reverse=True)[:5]
+    pred_name = CLASSES[pred]
+    fig = plt.figure(figsize=(13, 12), constrained_layout=True)
+    outer = fig.add_gridspec(3, 1, height_ratios=[1.15, 1.0, 0.85])
+    top = outer[0].subgridspec(1, 2)
+    ax_orig = fig.add_subplot(top[0, 0])
+    ax_proc = fig.add_subplot(top[0, 1])
+    ax_bar = fig.add_subplot(outer[1])
 
     ax_orig.imshow(original)
     ax_orig.set_title("Original")
@@ -80,16 +116,27 @@ def save_detailed(path, original, processed, probs, pred, name):
     ax_bar.set_yticks(
         list(y),
         [f"{CLASS_LABELS_EN[CLASSES[i]]}\n{CLASS_LABELS_KR[CLASSES[i]]}" for i in order],
-        fontsize=8,
+        fontsize=9,
     )
     ax_bar.invert_yaxis()
     ax_bar.set_xlim(0, 1.15)
     ax_bar.set_xlabel("Probability")
-    ax_bar.set_title("Landmark probabilities")
+    ax_bar.set_title("Top-5 SSS landmark probabilities")
     for yi, value in zip(y, heights):
         ax_bar.text(value + 0.02, yi, f"{value:.2f}", va="center", fontsize=9)
 
-    pred_name = CLASSES[pred]
+    cells = outer[2].subgridspec(1, 5)
+    for col, thumb in enumerate(examples[pred_name]):
+        ax = fig.add_subplot(cells[0, col])
+        ax.imshow(thumb)
+        ax.axis("off")
+        if col == 2:
+            ax.set_title(
+                f"GastroHUN examples  |  {CLASS_LABELS_EN[pred_name]}  /  {CLASS_LABELS_KR[pred_name]}",
+                fontsize=9,
+                pad=4,
+            )
+
     fig.suptitle(
         f"{name}  |  {CLASS_LABELS_EN[pred_name]} / {CLASS_LABELS_KR[pred_name]}  ({values[pred]:.2f})"
     )
@@ -98,7 +145,7 @@ def save_detailed(path, original, processed, probs, pred, name):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run landmark classifier on unlabeled images.")
+    parser = argparse.ArgumentParser(description="Run 23-class SSS landmark classifier on unlabeled images.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--input", type=Path, default=DEFAULT_TEST_DIR)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUTS / "predictions.csv")
@@ -106,7 +153,7 @@ def main():
     parser.add_argument(
         "--detailed",
         action="store_true",
-        help="Save a figure with original, processed crop, and class-probability bars.",
+        help="Save a figure with original, processed crop, top-5 bars, and examples for the predicted class.",
     )
     args = parser.parse_args()
     logging.basicConfig(
@@ -128,8 +175,11 @@ def main():
     transform = eval_transform()
     paths = sorted(p for p in args.input.rglob("*") if p.suffix.lower() in IMAGE_EXTS)
     log.info("images: %d", len(paths))
+    examples = None
     if args.detailed:
         _configure_korean_font()
+        examples = load_class_examples()
+        log.info("loaded 5 GastroHUN example thumbnails per class")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.vis_dir.mkdir(parents=True, exist_ok=True)
@@ -145,7 +195,7 @@ def main():
                 processed = to_vis_image(x[0])
                 vis_path = args.vis_dir / f"{path.stem}_{CLASSES[pred]}.jpg"
                 if args.detailed:
-                    save_detailed(vis_path, original, processed, prob, pred, path.name)
+                    save_detailed(vis_path, original, processed, prob, pred, path.name, examples)
                 else:
                     annotate(processed, f"{CLASSES[pred]}  {float(prob[pred]):.2f}").save(
                         vis_path, quality=95

@@ -57,7 +57,7 @@ def eval_epoch(model, loader, device, criterion=None, desc="val"):
 
 
 def plot_confusion_matrix(cm, path=None):
-    fig, ax = plt.subplots(figsize=(8, 7))
+    fig, ax = plt.subplots(figsize=(14, 13))
     im = ax.imshow(cm, cmap="Blues")
     fig.colorbar(im, ax=ax)
     ax.set_xticks(range(NUM_CLASSES), CLASSES, rotation=45, ha="right")
@@ -66,7 +66,7 @@ def plot_confusion_matrix(cm, path=None):
     ax.set_ylabel("True")
     for i in range(NUM_CLASSES):
         for j in range(NUM_CLASSES):
-            ax.text(j, i, int(cm[i, j]), ha="center", va="center", fontsize=8)
+            ax.text(j, i, int(cm[i, j]), ha="center", va="center", fontsize=6)
     fig.tight_layout()
     if path is not None:
         fig.savefig(path, dpi=150)
@@ -82,7 +82,7 @@ def load_trained_model(checkpoint: Path, device):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate landmark classifier on a labeled split.")
+    parser = argparse.ArgumentParser(description="Evaluate 23-class SSS landmark classifier on a labeled split.")
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--split", choices=("val", "test"), default="test")
     parser.add_argument("--splits-dir", type=Path, default=DEFAULT_OUTPUTS / "splits")

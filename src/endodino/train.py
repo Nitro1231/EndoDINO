@@ -16,9 +16,11 @@ from tqdm.auto import tqdm
 from endodino.constants import (
     CLASSES,
     DEFAULT_IMAGES,
+    DEFAULT_LABEL_COLUMN,
+    DEFAULT_LABELS,
     DEFAULT_OUTPUTS,
-    DEFAULT_UGIAD_SPLITS,
     DEFAULT_WEIGHTS,
+    LABEL_COLUMNS,
     NUM_CLASSES,
 )
 from endodino.data import (
@@ -35,9 +37,12 @@ log = logging.getLogger("endodino")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Fine-tune GastroNet DINOv2 for 9-class landmark classification.")
+    parser = argparse.ArgumentParser(
+        description="Fine-tune GastroNet DINOv2 for 23-class SSS landmark classification."
+    )
     parser.add_argument("--images", type=Path, default=DEFAULT_IMAGES)
-    parser.add_argument("--ugiad-splits", type=Path, default=DEFAULT_UGIAD_SPLITS)
+    parser.add_argument("--labels", type=Path, default=DEFAULT_LABELS)
+    parser.add_argument("--label-column", default=DEFAULT_LABEL_COLUMN, choices=LABEL_COLUMNS)
     parser.add_argument("--weights", type=Path, default=DEFAULT_WEIGHTS)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUTS)
     parser.add_argument("--epochs", type=int, default=30)
@@ -47,7 +52,6 @@ def parse_args():
     parser.add_argument("--head-lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=0.05)
     parser.add_argument("--warmup-epochs", type=int, default=5)
-    parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--freeze-backbone", action="store_true")
     parser.add_argument("--wandb", action=argparse.BooleanOptionalAction, default=True)
@@ -72,13 +76,17 @@ def main():
     splits_dir = args.output_dir / "splits"
     ckpt_dir = args.output_dir / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
-    split_paths = prepare_splits(
-        args.ugiad_splits, args.images, splits_dir, args.val_ratio, args.seed
-    )
+    split_paths = prepare_splits(args.labels, splits_dir, args.label_column)
 
     train_ds = LandmarkDataset(split_paths["train"], args.images, train_transform())
     val_ds = LandmarkDataset(split_paths["val"], args.images, eval_transform())
-    log.info("splits  train=%d  val=%d", len(train_ds), len(val_ds))
+    log.info(
+        "splits  label=%s  train=%d  val=%d  test=%d",
+        args.label_column,
+        len(train_ds),
+        len(val_ds),
+        len(split_paths["test"].read_text().splitlines()) - 1,
+    )
     log.info("loading backbone %s", args.weights)
     train_loader = DataLoader(
         train_ds,

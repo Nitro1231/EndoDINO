@@ -1,19 +1,23 @@
 import csv
+import json
 from pathlib import Path
 
 import torch
 from PIL import Image
-from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 from torchvision import transforms
 
 from endodino.constants import (
     CLASS_TO_IDX,
     CLASSES,
+    DEFAULT_LABEL_COLUMN,
     IMAGE_SIZE,
     IMAGENET_MEAN,
     IMAGENET_STD,
+    OTHERCLASS,
 )
+
+SET_TYPE_TO_SPLIT = {"Train": "train", "Validation": "val", "Test": "test"}
 
 
 class GaussianNoise:
@@ -59,51 +63,51 @@ def eval_transform():
     )
 
 
-def _write_csv(path: Path, rows: list[tuple[str, str]]) -> None:
+def _normalize_label(raw: str) -> str:
+    return "NA" if raw == OTHERCLASS else raw
+
+
+def _write_csv(path: Path, rows: list[tuple[str, str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["relpath", "landmark"])
+        writer.writerow(["relpath", "landmark", "patient"])
         writer.writerows(rows)
 
 
 def prepare_splits(
-    ugiad_splits: Path,
-    images_root: Path,
+    labels_csv: Path,
     out_dir: Path,
-    val_ratio: float = 0.2,
-    seed: int = 42,
+    label_column: str = DEFAULT_LABEL_COLUMN,
 ) -> dict[str, Path]:
-    """Train/val from on-disk images; official test.csv basenames are held out. Reuse if present."""
+    """Build train/val/test CSVs from GastroHUN official splits. Reuse if manifest matches."""
     paths = {name: out_dir / f"{name}.csv" for name in ("train", "val", "test")}
-    if all(p.exists() for p in paths.values()):
-        return paths
+    manifest_path = out_dir / "manifest.json"
 
-    test_names = set()
-    for csv_path in ugiad_splits.rglob("test.csv"):
-        for line in csv_path.read_text().splitlines():
-            name = line.strip()
-            if name:
-                test_names.add(name)
+    with labels_csv.open(newline="") as f:
+        rows = list(csv.DictReader(f))
 
-    trainval, test_rows = [], []
-    for image_path in sorted(images_root.rglob("*.png")):
-        relpath = image_path.relative_to(images_root).as_posix()
-        row = (relpath, image_path.parent.name)
-        if image_path.name in test_names:
-            test_rows.append(row)
-        else:
-            trainval.append(row)
+    buckets = {name: [] for name in paths}
+    for row in rows:
+        label = row[label_column].strip()
+        if not label:
+            continue
+        landmark = _normalize_label(label)
+        split = SET_TYPE_TO_SPLIT[row["set_type"]]
+        patient = row["num patient"]
+        relpath = f"{patient}/{row['filename']}"
+        buckets[split].append((relpath, landmark, patient))
 
-    train_rows, val_rows = train_test_split(
-        trainval,
-        test_size=val_ratio,
-        random_state=seed,
-        stratify=[landmark for _, landmark in trainval],
-    )
-    _write_csv(paths["train"], train_rows)
-    _write_csv(paths["val"], val_rows)
-    _write_csv(paths["test"], test_rows)
+    counts = {name: len(buckets[name]) for name in paths}
+    expected = {"label_column": label_column, "counts": counts}
+    if manifest_path.exists() and all(p.exists() for p in paths.values()):
+        if json.loads(manifest_path.read_text()) == expected:
+            return paths
+
+    for name, path in paths.items():
+        _write_csv(path, buckets[name])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(expected, indent=2) + "\n")
     return paths
 
 
