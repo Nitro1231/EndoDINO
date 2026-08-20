@@ -155,6 +155,12 @@ def main():
         action="store_true",
         help="Save a figure with original, processed crop, top-5 bars, and examples for the predicted class.",
     )
+    parser.add_argument(
+        "--device",
+        default="auto",
+        choices=["auto", "cpu", "cuda"],
+        help="Run on cpu or cuda (default: cuda if available, else cpu).",
+    )
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.INFO,
@@ -162,7 +168,12 @@ def main():
         datefmt="%H:%M:%S",
     )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if args.device == "auto":
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    elif args.device == "cuda" and not torch.cuda.is_available():
+        parser.error("CUDA requested but torch.cuda.is_available() is False")
+    else:
+        device = torch.device(args.device)
     log.info(
         "device=%s  input=%s  checkpoint=%s  detailed=%s",
         device,
