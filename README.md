@@ -6,35 +6,35 @@ GastroNet-5M DINOv2 ViT-B fine-tuned on GastroHUN for 23-class SSS (Systematic S
 
 ## Classes
 
-Each station code is a **wall** + **region** (for example `G3` = greater curvature of the upper-middle body). Walls: **A** anterior (전벽), **L** lesser curvature (소만), **P** posterior (후벽), **G** greater curvature (대만). Retroflex (5) and incisura (6) have no greater-curvature class.
+Each station code is a **wall** + **region** (for example `G3` = greater curvature of the upper-middle body). Walls: **A** anterior wall (전벽), **L** lesser curvature (소만), **P** posterior wall (후벽), **G** greater curvature (대만). Retroflex (5) and incisura (6) have no greater-curvature class.
 
 ![SSS class reference](assets/sss_class_reference.jpg)
 
 | Code | English | Korean |
 |------|---------|--------|
-| A1 | Antrum, Anterior | 전정부, 전벽 |
-| L1 | Antrum, Lesser Curvature | 전정부, 소만 |
-| P1 | Antrum, Posterior | 전정부, 후벽 |
-| G1 | Antrum, Greater Curvature | 전정부, 대만 |
-| A2 | Lower Body, Anterior | 위체부 하부, 전벽 |
-| L2 | Lower Body, Lesser Curvature | 위체부 하부, 소만 |
-| P2 | Lower Body, Posterior | 위체부 하부, 후벽 |
-| G2 | Lower Body, Greater Curvature | 위체부 하부, 대만 |
-| A3 | Upper-Middle Body, Anterior | 위체부 중상부, 전벽 |
-| L3 | Upper-Middle Body, Lesser Curvature | 위체부 중상부, 소만 |
-| P3 | Upper-Middle Body, Posterior | 위체부 중상부, 후벽 |
-| G3 | Upper-Middle Body, Greater Curvature | 위체부 중상부, 대만 |
-| A4 | Fundus/Cardia, Anterior | 위저부/분문부, 전벽 |
-| L4 | Fundus/Cardia, Lesser Curvature | 위저부/분문부, 소만 |
-| P4 | Fundus/Cardia, Posterior | 위저부/분문부, 후벽 |
-| G4 | Fundus/Cardia, Greater Curvature | 위저부/분문부, 대만 |
-| A5 | Upper-Middle Body Retroflex, Anterior | 위체부 중상부 반전, 전벽 |
-| L5 | Upper-Middle Body Retroflex, Lesser Curvature | 위체부 중상부 반전, 소만 |
-| P5 | Upper-Middle Body Retroflex, Posterior | 위체부 중상부 반전, 후벽 |
-| A6 | Incisura, Anterior | 위각, 전벽 |
-| L6 | Incisura, Lesser Curvature | 위각, 소만 |
-| P6 | Incisura, Posterior | 위각, 후벽 |
-| NA | Unqualified / Other | 부적합 / 기타 |
+| A1 | Antrum, Anterior wall | 전정부, 전벽 |
+| L1 | Antrum, Lesser curvature | 전정부, 소만 |
+| P1 | Antrum, Posterior wall | 전정부, 후벽 |
+| G1 | Antrum, Greater curvature | 전정부, 대만 |
+| A2 | Lower body, Anterior wall | 위체하부, 전벽 |
+| L2 | Lower body, Lesser curvature | 위체하부, 소만 |
+| P2 | Lower body, Posterior wall | 위체하부, 후벽 |
+| G2 | Lower body, Greater curvature | 위체하부, 대만 |
+| A3 | Upper-middle body, Anterior wall | 위체중상부, 전벽 |
+| L3 | Upper-middle body, Lesser curvature | 위체중상부, 소만 |
+| P3 | Upper-middle body, Posterior wall | 위체중상부, 후벽 |
+| G3 | Upper-middle body, Greater curvature | 위체중상부, 대만 |
+| A4 | Fundus/cardia, Anterior wall | 위저부/분문부, 전벽 |
+| L4 | Fundus/cardia, Lesser curvature | 위저부/분문부, 소만 |
+| P4 | Fundus/cardia, Posterior wall | 위저부/분문부, 후벽 |
+| G4 | Fundus/cardia, Greater curvature | 위저부/분문부, 대만 |
+| A5 | Upper-middle body retroflex, Anterior wall | 위체중상부 반전, 전벽 |
+| L5 | Upper-middle body retroflex, Lesser curvature | 위체중상부 반전, 소만 |
+| P5 | Upper-middle body retroflex, Posterior wall | 위체중상부 반전, 후벽 |
+| A6 | Incisura, Anterior wall | 위각부, 전벽 |
+| L6 | Incisura, Lesser curvature | 위각부, 소만 |
+| P6 | Incisura, Posterior wall | 위각부, 후벽 |
+| NA | Unqualified / not applicable | 부적합 / 해당 없음 |
 
 ## Setup
 
