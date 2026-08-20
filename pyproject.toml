@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "endodino"
 version = "0.1.0"
-description = "GastroNet-5M DINOv2 ViT-B fine-tuning for EGD anatomical landmark classification."
+description = "GastroNet-5M DINOv2 ViT-B fine-tuning for 23-class SSS landmark classification on GastroHUN."
 requires-python = ">=3.10"
 dependencies = [
     "torch",

@@ -1,17 +1,17 @@
 # EndoDINO
 
-English | [한국어](README.ko.md)
+[English](README.md) | 한국어
 
-GastroNet-5M DINOv2 ViT-B fine-tuned on GastroHUN for 23-class SSS (Systematic Screening Protocol for the Stomach) landmark classification: 22 Kenshi Yao stations plus NA.
+GastroNet-5M DINOv2 ViT-B를 GastroHUN에서 23클래스 SSS(위 체계적 선별 프로토콜, Systematic Screening Protocol for the Stomach) 랜드마크 분류로 파인튜닝한 모델입니다. Kenshi Yao 관찰점 22개와 NA를 포함합니다.
 
-## Classes
+## 클래스
 
-Each station code is a **wall** + **region** (for example `G3` = greater curvature of the upper-middle body). Walls: **A** anterior (전벽), **L** lesser curvature (소만), **P** posterior (후벽), **G** greater curvature (대만). Retroflex (5) and incisura (6) have no greater-curvature class.
+각 관찰점 코드는 **벽** + **부위**입니다 (예: `G3` = 위체부 중상부의 대만). 벽: **A** 전벽 (anterior), **L** 소만 (lesser curvature), **P** 후벽 (posterior), **G** 대만 (greater curvature). 반전(5)과 위각(6)에는 대만 클래스가 없습니다.
 
-![SSS class reference](assets/sss_class_reference.jpg)
+![SSS 클래스 참고도](assets/sss_class_reference.jpg)
 
-| Code | English | Korean |
-|------|---------|--------|
+| 코드 | 영어 | 한국어 |
+|------|------|--------|
 | A1 | Antrum, Anterior | 전정부, 전벽 |
 | L1 | Antrum, Lesser Curvature | 전정부, 소만 |
 | P1 | Antrum, Posterior | 전정부, 후벽 |
@@ -36,33 +36,33 @@ Each station code is a **wall** + **region** (for example `G3` = greater curvatu
 | P6 | Incisura, Posterior | 위각, 후벽 |
 | NA | Unqualified / Other | 부적합 / 기타 |
 
-## Setup
+## 설정
 
 ```bash
 pip install -e .
 wandb login
 ```
 
-Place files as:
+파일을 다음과 같이 배치하세요:
 
 ```
 weight/dinov2.pth              # GastroNet DINOv2 ViT-B
-data/GastroHUN/                # patient folders, metadata/, official_splits/
-data/test/                     # unlabeled frames for inference
+data/GastroHUN/                # 환자 폴더, metadata/, official_splits/
+data/test/                     # 추론용 미라벨 프레임
 ```
 
-- Model weights: [GastroNet-5M DINOv2 ViT-B](https://cortex.thetavision.nl/dataset-provider/listing/2/)
-- Dataset: [GastroHUN](https://www.nature.com/articles/s41597-025-04401-5)
+- 모델 가중치: [GastroNet-5M DINOv2 ViT-B](https://cortex.thetavision.nl/dataset-provider/listing/2/)
+- 데이터셋: [GastroHUN](https://www.nature.com/articles/s41597-025-04401-5)
 
-Official patient-level splits come from `data/GastroHUN/official_splits/image_classification.csv`. Training defaults to **complete 4-rater agreement** (paper Scenario A): 3,722 / 793 / 803 images. `OTHERCLASS` is mapped to `NA`.
+공식 환자 단위 분할은 `data/GastroHUN/official_splits/image_classification.csv`에서 가져옵니다. 학습 기본값은 **4명 평가자 완전 일치**(논문 Scenario A)입니다: 3,722 / 793 / 803장. `OTHERCLASS`는 `NA`로 매핑됩니다.
 
-## Train
+## 학습
 
 ```bash
 python -m endodino.train
 ```
 
-Logs to [Weights & Biases](https://wandb.ai) (`endodino` project). Use `--no-wandb` to skip. Checkpoints are ranked by validation macro-F1:
+[Weights & Biases](https://wandb.ai)에 기록합니다 (`endodino` 프로젝트). 건너뛰려면 `--no-wandb`를 사용하세요. 체크포인트는 검증 macro-F1 기준으로 순위가 매겨집니다:
 
 ```
 outputs/checkpoints/top1.pt
@@ -70,35 +70,35 @@ outputs/checkpoints/top2.pt
 outputs/checkpoints/top3.pt
 ```
 
-Linear probe instead of full fine-tune:
+전체 파인튜닝 대신 선형 프로브:
 
 ```bash
 python -m endodino.train --freeze-backbone
 ```
 
-Use a different GastroHUN label column (annotator or consensus):
+다른 GastroHUN 라벨 열(평가자 또는 합의)을 사용하려면:
 
 ```bash
 python -m endodino.train --label-column "Triple agreement"
 ```
 
-## Evaluate
+## 평가
 
 ```bash
 python -m endodino.evaluate --split test --checkpoint outputs/checkpoints/top1.pt
 python -m endodino.evaluate --split val --checkpoint outputs/checkpoints/top1.pt
 ```
 
-Writes a classification report and confusion matrix to `outputs/eval/`.
+분류 리포트와 혼동 행렬을 `outputs/eval/`에 저장합니다.
 
-## Infer
+## 추론
 
 ```bash
 python -m endodino.infer --input data/test --checkpoint outputs/checkpoints/top1.pt
 python -m endodino.infer --input data/test --checkpoint outputs/checkpoints/top1.pt --detailed
 ```
 
-`--detailed` saves original, processed crop, and bilingual probability bars. Outputs:
+`--detailed`는 원본, 전처리된 크롭, 한·영 확률 막대 그래프를 저장합니다. 출력:
 
 ```
 outputs/predictions.csv
